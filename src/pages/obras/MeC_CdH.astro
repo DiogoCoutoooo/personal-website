@@ -1,0 +1,317 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+
+const book = {
+    title: "Madrugada em Clave, Coluna da Harmonia",
+    author: "António Abrantes",
+    prefacio: "[Placeholder Prefácio]",
+    editora: "[Placeholder Editora]",
+    cover: "https://images.unsplash.com/photo-1513863323558-0b4be34b7c9c?q=80&w=1400&auto=format&fit=crop",
+    description: "Sinopse em breve para Madrugada em Clave, Coluna da Harmonia."
+};
+---
+
+<Layout title={`${book.title} — António Abrantes`} description={book.description}>
+    <Header />
+    
+    <main class="book-detail-page">
+        <section class="book-hero">
+            <div class="container book-container">
+                <div class="book-visual">
+                    <div class="main-image">
+                        <img src={book.cover} alt={book.title} class="book-cover-img" />
+                    </div>
+                </div>
+
+                <div class="book-info">
+                    <p class="book-badge">Livro</p>
+                    <h1>{book.title}</h1>
+                    <p class="author-credits">
+                        de <span class="author-name">{book.author}</span>
+                    </p>
+                    <p class="prefacio-credits">
+                        Prefácio de <strong>{book.prefacio}</strong>
+                    </p>
+                    
+                    <div class="book-metadata">
+                        <p><strong>Editor:</strong> {book.editora}</p>
+                    </div>
+
+                    <div class="book-actions">
+                        <a href="/obras/MeC_CdH/media" class="btn btn-primary">
+                            <span class="icon">📺</span> CONTEÚDOS MULTIMÉDIA
+                        </a>
+                    </div>
+
+                    <div class="scroll-indicator">
+                        <span class="scroll-text">Sinopse</span>
+                        <div class="mouse">
+                            <div class="wheel"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="book-synopsis">
+            <div class="container">
+                <div class="synopsis-grid">
+                    <div class="synopsis-header">
+                        <h2>Sinopse</h2>
+                    </div>
+                    <div class="synopsis-content">
+                        <p>[Sinopse Placeholder] Madrugada em Clave, Coluna da Harmonia é uma obra que explora os limites da melodia e da harmonia...</p>
+                        <p>Conteúdo detalhado será adicionado brevemente.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <Footer />
+</Layout>
+
+<script>
+    const scrollIndicator = document.querySelector('.scroll-indicator');
+    const synopsisSection = document.querySelector('.book-synopsis');
+    
+    if (scrollIndicator && synopsisSection) {
+        scrollIndicator.addEventListener('click', () => {
+            synopsisSection.scrollIntoView({ behavior: 'smooth' });
+        });
+    }
+</script>
+
+<style>
+    .book-detail-page {
+        background: var(--bg);
+        color: var(--text);
+        padding-top: 40px;
+    }
+
+    .book-hero {
+        padding: 60px 0 100px;
+        background: linear-gradient(180deg, rgba(20,20,20,1) 0%, var(--bg) 100%);
+        position: relative;
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+    }
+
+    .book-container {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 60px;
+        align-items: start;
+    }
+
+    .book-visual {
+        position: sticky;
+        top: 120px;
+    }
+
+    .main-image {
+        background: #1a1a1a;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .book-cover-img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 4px;
+    }
+
+    .book-info {
+        padding-top: 20px;
+    }
+
+    .book-badge {
+        display: inline-block;
+        background: var(--gold);
+        color: #000;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .book-info h1 {
+        font-size: clamp(32px, 5vw, 48px);
+        line-height: 1.1;
+        margin-bottom: 16px;
+        color: #fff;
+    }
+
+    .author-credits {
+        font-size: 1.25rem;
+        color: var(--muted);
+        margin-bottom: 8px;
+    }
+
+    .author-name {
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .prefacio-credits {
+        font-size: 1.1rem;
+        color: var(--muted);
+        margin-bottom: 24px;
+    }
+
+    .book-metadata {
+        border-top: 1px solid rgba(255,255,255,0.1);
+        padding-top: 24px;
+        margin-bottom: 40px;
+    }
+
+    .book-metadata p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+    }
+
+    .book-actions {
+        display: flex;
+        gap: 20px;
+    }
+
+    .btn-primary {
+        background: #b91c1c;
+        color: #fff;
+        padding: 16px 40px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 10px 20px rgba(185, 28, 28, 0.2);
+        text-decoration: none;
+    }
+
+    .btn-primary:hover {
+        background: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 15px 30px rgba(185, 28, 28, 0.3);
+    }
+
+    .book-synopsis {
+        padding: 80px 0;
+        border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .synopsis-grid {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 40px;
+    }
+
+    .synopsis-header h2 {
+        font-size: 2rem;
+        color: #fff;
+        position: relative;
+        padding-bottom: 15px;
+    }
+
+    .synopsis-header h2::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 40px;
+        height: 3px;
+        background: var(--gold);
+    }
+
+    .synopsis-content {
+        max-width: 800px;
+    }
+
+    .synopsis-content p {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: var(--muted);
+        margin-bottom: 24px;
+        text-align: justify;
+    }
+
+    .scroll-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin-top: 60px;
+        opacity: 0.6;
+        transition: opacity 0.3s ease;
+        cursor: pointer;
+    }
+
+    .scroll-indicator:hover {
+        opacity: 1;
+    }
+
+    .scroll-text {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--muted);
+    }
+
+    .mouse {
+        width: 24px;
+        height: 40px;
+        border: 2px solid var(--muted);
+        border-radius: 20px;
+        position: relative;
+    }
+
+    .wheel {
+        width: 4px;
+        height: 8px;
+        background: var(--gold);
+        border-radius: 2px;
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        animation: scroll-wheel 2s infinite;
+    }
+
+    @keyframes scroll-wheel {
+        0% { opacity: 0; transform: translateX(-50%) translateY(0); }
+        30% { opacity: 1; }
+        100% { opacity: 0; transform: translateX(-50%) translateY(15px); }
+    }
+
+    @media (max-width: 980px) {
+        .scroll-indicator {
+            display: none;
+        }
+        .book-container {
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+
+        .book-visual {
+            position: static;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .synopsis-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+    }
+</style>

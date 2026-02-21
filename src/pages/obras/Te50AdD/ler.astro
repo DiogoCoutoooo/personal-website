@@ -1,0 +1,535 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="Leitor — Turismo em 50 Anos de Democracia" description="Leia uma amostra do livro Turismo em 50 Anos de Democracia.">
+    <div class="reader-container">
+        <!-- Header Controls -->
+        <header class="reader-header">
+            <div class="header-left">
+                <a href="/obras/Te50AdD" class="back-link">
+                    <span class="icon">✕</span>
+                    <span class="text">Sair do Leitor</span>
+                </a>
+            </div>
+            <div class="header-center">
+                <h1 class="book-title-mini">Turismo em 50 Anos de Democracia</h1>
+            </div>
+            <div class="header-right">
+                <span id="page-counter">A carregar...</span>
+            </div>
+        </header>
+
+        <!-- Main Reader Shell -->
+        <div class="reader-shell">
+            <button id="btn-prev" class="nav-btn prev" aria-label="Página Anterior">
+                <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </button>
+            
+            <div id="book-canvas-container" class="book-canvas-container">
+                <div id="book" class="book">
+                    <!-- Pages will be injected here -->
+                </div>
+            </div>
+
+            <button id="btn-next" class="nav-btn next" aria-label="Próxima Página">
+                <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+            </button>
+        </div>
+
+        <!-- Footer Controls -->
+        <footer class="reader-footer">
+            <div class="footer-controls">
+                <div class="page-slider-container">
+                    <span class="slider-label">1</span>
+                    <input type="range" id="page-slider" min="1" max="1" value="1" step="1">
+                    <span id="slider-total-label" class="slider-label">...</span>
+                </div>
+                <div class="footer-right">
+                    <button id="btn-fullscreen" class="footer-btn" title="Ecrã Inteiro">
+                        <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="loader"></div>
+            <p>A preparar a sua leitura...</p>
+        </div>
+    </div>
+</Layout>
+
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script is:inline src="https://unpkg.com/page-flip/dist/js/page-flip.browser.js"></script>
+
+<script is:inline>
+    // Configuration
+    const PDF_PATH = '/obras/livro_Te50AdD.pdf';
+    let pdfDoc = null;
+    let pageFlip = null;
+    
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const bookContainer = document.getElementById('book');
+    const pageCounter = document.getElementById('page-counter');
+    const pageSlider = document.getElementById('page-slider');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const btnFullscreen = document.getElementById('btn-fullscreen');
+
+    // Initialize PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+    async function initReader() {
+        try {
+            // Load PDF
+            pdfDoc = await pdfjsLib.getDocument(PDF_PATH).promise;
+            const totalPages = pdfDoc.numPages;
+            
+            pageSlider.max = totalPages;
+            
+            // We need to determine the aspect ratio from the first page
+            const firstPage = await pdfDoc.getPage(1);
+            const vp = firstPage.getViewport({ scale: 1 });
+            const pageAspectRatio = vp.width / vp.height;
+            const baseHeight = 800;
+            const baseWidth = baseHeight * pageAspectRatio;
+
+            pageFlip = new St.PageFlip(bookContainer, {
+                width: baseWidth,
+                height: baseHeight,
+                size: "stretch",
+                minWidth: 200,
+                maxWidth: 2000,
+                minHeight: 300,
+                maxHeight: 2000,
+                maxShadowOpacity: 0.5,
+                showCover: true,
+                mobileScrollSupport: false
+            });
+
+            // Create page placeholders
+            for (let i = 1; i <= totalPages; i++) {
+                const pageEl = document.createElement('div');
+                pageEl.className = 'page';
+                pageEl.innerHTML = `
+                    <div class="page-content">
+                        <canvas id="canvas-page-${i}"></canvas>
+                    </div>
+                `;
+                bookContainer.appendChild(pageEl);
+            }
+
+            pageFlip.loadFromHTML(document.querySelectorAll('.page'));
+            document.getElementById('slider-total-label').textContent = totalPages;
+
+            // Initial render of first few pages
+            await renderPage(1);
+            await renderPage(2);
+            await renderPage(3);
+
+            // Events
+            btnPrev.addEventListener('click', () => pageFlip.flipPrev());
+            btnNext.addEventListener('click', () => pageFlip.flipNext());
+
+            pageFlip.on('flip', (e) => {
+                const currentPage = e.data + 1;
+                updateUI(currentPage);
+                // Load surrounding pages
+                renderPage(currentPage);
+                renderPage(currentPage + 1);
+                renderPage(currentPage + 2);
+                if (currentPage > 1) renderPage(currentPage - 1);
+            });
+
+            pageSlider.addEventListener('input', (e) => {
+                const pageNum = parseInt(e.target.value);
+                pageFlip.turnToPage(pageNum - 1);
+                updateSliderFill(pageNum);
+            });
+
+            btnFullscreen.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            });
+
+            loadingOverlay.style.opacity = '0';
+            setTimeout(() => loadingOverlay.style.display = 'none', 500);
+            updateUI(1);
+
+        } catch (error) {
+            console.error('Error loading reader:', error);
+            alert('Erro ao carregar o livro. Por favor, tente novamente mais tarde.');
+        }
+    }
+
+    const renderedPages = new Set();
+    async function renderPage(num) {
+        if (num < 1 || num > pdfDoc.numPages || renderedPages.has(num)) return;
+        renderedPages.add(num);
+
+        const canvas = document.getElementById(`canvas-page-${num}`);
+        if (!canvas) return;
+
+        const page = await pdfDoc.getPage(num);
+        const viewport = page.getViewport({ scale: 2 }); // Better quality
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+    }
+
+    function updateSliderFill(current) {
+        if (!pdfDoc) return;
+        const total = pdfDoc.numPages;
+        if (total <= 1) return;
+        
+        const percent = ((current - 1) / (total - 1)) * 100;
+        
+        // Precise calculation: thumb moves from 12px to (100% - 12px)
+        // Its center aligns with the gradient stop.
+        // Formula: stop = 12px + (percent/100) * (100% - 24px)
+        const stop = `calc(12px + (${percent} / 100) * (100% - 24px))`;
+        
+        pageSlider.style.background = `linear-gradient(to right, var(--reader-accent) 0%, var(--reader-accent) ${stop}, rgba(255,255,255,0.1) ${stop}, rgba(255,255,255,0.1) 100%)`;
+    }
+
+    function updateUI(current) {
+        if (!pdfDoc) return;
+        const total = pdfDoc.numPages;
+        const orientation = pageFlip.getOrientation();
+        
+        let displayPages = "";
+        let visiblePages = [current];
+
+        if (current === 1) {
+            displayPages = "1";
+        } else if (current === total && total % 2 === 0) {
+            displayPages = total;
+        } else {
+            if (orientation === 'landscape') {
+                const next = current + 1;
+                displayPages = next <= total ? `${current}-${next}` : `${current}`;
+                if (next <= total) visiblePages.push(next);
+            } else {
+                displayPages = `${current}`;
+            }
+        }
+        
+        // Update page counter text
+        pageCounter.textContent = `${displayPages} / ${total}`;
+        
+        // Sync slider value
+        // If in spread mode, only update the slider if it's NOT already pointing 
+        // to one of the pages currently being displayed.
+        const sliderVal = parseInt(pageSlider.value);
+        if (!visiblePages.includes(sliderVal)) {
+            pageSlider.value = current;
+        }
+        
+        // Always update the fill based on the slider's current physical value
+        updateSliderFill(parseInt(pageSlider.value));
+    }
+
+    // Start
+    window.addEventListener('DOMContentLoaded', initReader);
+</script>
+
+<style>
+    :root {
+        --reader-bg: #1a1a1a;
+        --reader-header-bg: #000000;
+        --reader-footer-bg: rgba(0, 0, 0, 0.8);
+        --reader-accent: #d4af37;
+    }
+
+    .reader-container {
+        position: fixed;
+        inset: 0;
+        background: var(--reader-bg);
+        color: #fff;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* Header */
+    .reader-header {
+        height: 60px;
+        background: var(--reader-header-bg);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        z-index: 10;
+    }
+
+    .back-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #999;
+        transition: color 0.3s;
+    }
+
+    .back-link:hover {
+        color: #fff;
+    }
+
+    .book-title-mini {
+        font-size: 1rem;
+        font-weight: 400;
+        margin: 0;
+        color: #ddd;
+    }
+
+    #page-counter {
+        font-size: 0.9rem;
+        color: #999;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Shell */
+    .reader-shell {
+        flex: 1;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 50px 100px; /* Increased padding to give more breathing room */
+        background: radial-gradient(circle, #2a2a2a 0%, #1a1a1a 100%);
+        min-height: 0;
+    }
+
+    .book-canvas-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 60vw;
+        max-height: 55vh;
+    }
+
+    .book {
+        box-shadow: 0 0 100px rgba(0,0,0,0.8);
+    }
+
+    .page {
+        background: white;
+        overflow: hidden;
+    }
+
+    .page-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+    }
+
+    .page-content canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .page-number-hint {
+        position: absolute;
+        bottom: 10px;
+        right: 15px;
+        font-size: 10px;
+        color: #ccc;
+        pointer-events: none;
+    }
+
+    /* Navigation */
+    .nav-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 60px;
+        height: 80px;
+        background: rgba(0,0,0,0.3);
+        border: none;
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s, transform 0.2s;
+        border-radius: 8px;
+        z-index: 5;
+    }
+
+    .nav-btn:hover {
+        background: rgba(0,0,0,0.6);
+        transform: translateY(-50%) scale(1.05);
+    }
+
+    .nav-btn svg {
+        width: 40px;
+        height: 40px;
+        fill: currentColor;
+    }
+
+    .nav-btn.prev { left: 40px; }
+    .nav-btn.next { right: 40px; }
+
+    /* Footer */
+    .reader-footer {
+        height: 70px;
+        background: var(--reader-footer-bg);
+        backdrop-filter: blur(15px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 40px;
+        border-top: 1px solid rgba(255,255,255,0.05);
+        z-index: 10;
+    }
+
+    .footer-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 30px;
+        width: 100%;
+        max-width: 1200px;
+    }
+
+    .page-slider-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        max-width: 800px;
+    }
+
+    .slider-label {
+        font-size: 0.8rem;
+        color: #999;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        min-width: 30px;
+        user-select: none;
+    }
+
+    input[type=range] {
+        flex: 1;
+        height: 10px;
+        appearance: none;
+        background: rgba(255,255,255,0.1); /* Fallback */
+        border-radius: 5px;
+        outline: none;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    /* Track */
+    input[type=range]::-webkit-slider-runnable-track {
+        background: transparent;
+        height: 10px;
+        border-radius: 5px;
+    }
+
+    /* Thumb */
+    input[type=range]::-webkit-slider-thumb {
+        appearance: none;
+        height: 24px;
+        width: 24px;
+        border-radius: 50%;
+        background: #fff;
+        border: 4px solid var(--reader-accent);
+        cursor: pointer;
+        margin-top: -7px; /* (10/2) - (24/2) = 5 - 12 = -7 */
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        transition: transform 0.2s, background 0.2s;
+        z-index: 10;
+        position: relative;
+    }
+
+    input[type=range]:hover {
+        transform: scaleY(1.2);
+    }
+
+    input[type=range]:hover::-webkit-slider-thumb {
+        transform: scale(1.1);
+    }
+
+    .footer-right {
+        display: flex;
+        align-items: center;
+    }
+
+    .footer-btn {
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .footer-btn:hover {
+        color: #fff;
+        background: rgba(255,255,255,0.1);
+    }
+
+    .footer-btn svg {
+        width: 22px;
+        height: 22px;
+        fill: currentColor;
+    }
+
+    /* Loading */
+    .loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: var(--reader-bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        transition: opacity 0.5s ease;
+    }
+
+    .loader {
+        width: 48px;
+        height: 48px;
+        border: 3px solid rgba(255,255,255,0.1);
+        border-radius: 50%;
+        border-top-color: var(--reader-accent);
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .reader-shell {
+            padding: 20px 40px;
+        }
+        .nav-btn {
+            width: 40px;
+            height: 60px;
+        }
+        .nav-btn.prev { left: 10px; }
+        .nav-btn.next { right: 10px; }
+    }
+</style>

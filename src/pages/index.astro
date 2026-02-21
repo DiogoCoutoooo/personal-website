@@ -1,0 +1,78 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout>
+	<Header />
+	
+	<main id="home">
+		<section class="hero" aria-label="Destaque">
+			<div class="hero-media" role="img" aria-label="Quarteto de cordas em palco"></div>
+			<div class="container hero-content">
+				<p class="eyebrow">O meu trabalho</p>
+				<h1>Descubra as obras publicadas.</h1>
+				<a href="#obras" class="btn btn-light">Saber mais</a>
+			</div>
+		</section>
+
+		<section id="bio" class="section">
+			<div class="container two-col">
+				<div>
+					<h2>Biografia</h2>
+					<p>Nasceu em General Rodriguez, Argentina, passou a infância em Girabolhos, Seia, e recebeu formação para a vida em Carcavelos/Oeiras.</p>
+					<p>Licenciado em Organização e Gestão de Empresas no Insituto Superior de Ciências do Trabalho e da Empresa (ISCTE), deu início à sua actividade no turismo na ENATUR, E.P. - Empresa Nacional de Turismo.</p>
+					<p>Foi Assessor e Chefe de Gabinete do Secretário de Estado do Turismo dos X e XI Governos Constitucionais e Auditor de Defesa Nacional, no Instituto de Defesa Nacional.</p>
+					<p>Regressou à vida empresarial na ESTA - Gestão de Hotéis, S.A., altura em que iniciou a sua vida académica como professor de turismo, actividade que ainda mantém.</p>
+					<p>Foi Coordenador da Estrutura de Apoio Técnico ao Gestor da Medida 3 - Formação dos Profissionais do Turismo no QCA II, de onde saiu para Secretário-Geral da Confederação do Turismo Português.</p>
+					<p>Coordenador da Equipa Técnica da Associação de Municípios do Vale do Côa, foi responsável pela concepção e plano de acção da Estratégia de Eficiência Colectiva PROVERE, para o desenvolvimento do Turismo e Património do Vale do Côa.</p>
+					<p>Obteve o grau de Mestre em Gestão Estratégica de Empresas Turísticas e o título de Especialista em Turismo e Lazer, passando a integrar a administração de várias empresas turísticas.</p>
+					<p>Regressou à actividade associativa como Secretário-Geral da Confederação do Turismo de Portugal, tendo integrado o Conselho Económico e Social (CES) o Concelho Superior de Estatística (CSE) e as Comissões de Acompanhamento dos Programas Operacionais do Algarve e do Plano de Recuperação e Resiliência (PRR).</p>
+					<p>Actualmente, lecciona em cursos superiores de turismo, nas áreas da economia do turismo, política do turismo e legislação turística, na Universidade Lusófona e no Instituto Superior de Lisboa e Vale do Tejo (ISCE).</p>
+					<a class="link" href="#contacto">Saiba mais</a>
+				</div>
+				<div class="photo">
+					<img src="/selfie.png" alt="António Abrantes">
+				</div>
+			</div>
+		</section>
+
+		<section id="obras" class="section section-light">
+			<div class="container">
+				<h2 class="center">Obras</h2>
+				<div class="grid">
+					<a href="/obras/Te50AdD" class="work-card">
+						<img src="/capas/capa_Te50AdD.jpg" alt="Turismo em 50 Anos de Democracia" loading="lazy">
+						<div class="work-meta">
+							<h3>Turismo em 50 Anos de Democracia</h3>
+							<p>Através da reflexão de 50 personalidades, este livro mostra o percurso em 50 anos de democracia do Turismo nas suas várias dimensões, evolução e nos seus contributos ao País, à sociedade e à economia.</p>
+						</div>
+					</a>
+					<a href="/obras/MeC_CdH" class="work-card">
+						<img src="https://images.unsplash.com/photo-1513863323558-0b4be34b7c9c?q=80&w=1400&auto=format&fit=crop" alt="Madrugada em Clave, Coluna da Harmonia" loading="lazy">
+						<div class="work-meta">
+							<h3>Madrugada em Clave, Coluna da Harmonia</h3>
+							<p>Descrição a ser adicionada brevemente.</p>
+						</div>
+					</a>
+				</div>
+			</div>
+		</section>
+
+		<section id="contacto" class="section">
+			<div class="container contact">
+				<h2>Contacto</h2>
+				<p>Aberto a colaborações em cinema, teatro e multimédia.</p>
+				<a class="btn" href="mailto:antonioacabrantes@gmail.com">Enviar email</a>
+			</div>
+		</section>
+	</main>
+
+	<Footer />
+</Layout>
+
+<script>
+    // Homepage specific logic can go here if needed.
+    // General navigation is now handled by the Header component.
+</script>

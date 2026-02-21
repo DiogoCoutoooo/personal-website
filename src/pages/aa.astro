@@ -1,0 +1,134 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="A Redirecionar..." description="A reencaminhar para a página de conteúdos multimédia.">
+	<Header />
+	
+	<main class="redirect-page">
+		<div class="container">
+			<div class="redirect-content">
+				<div class="loader-ring"><div></div><div></div><div></div><div></div></div>
+				<h1>A Redirecionar</h1>
+				<p class="message">Estamos a levá-lo para a página de conteúdos multimédia do livro.</p>
+
+				
+				<a href="/obras/MeC_CdH/media" id="manual-link" class="btn-manual">
+					Ir agora
+				</a>
+			</div>
+		</div>
+	</main>
+
+	<Footer />
+</Layout>
+
+<style>
+	.redirect-page {
+		min-height: 80vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+		text-align: center;
+		padding: 40px 20px;
+	}
+
+	.redirect-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 24px;
+		max-width: 600px;
+		margin: 0 auto;
+		background: rgba(255, 255, 255, 0.03);
+		padding: 60px 40px;
+		border-radius: 20px;
+		border: 1px solid rgba(255, 255, 255, 0.05);
+		backdrop-filter: blur(10px);
+		box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+	}
+
+	h1 {
+		font-size: clamp(2rem, 4vw, 3rem);
+		color: #fff;
+		margin: 0;
+		font-weight: 600;
+	}
+
+	.message {
+		color: var(--muted);
+		font-size: 1.1rem;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+
+
+	.btn-manual {
+		margin-top: 10px;
+		padding: 12px 24px;
+		background: rgba(255, 255, 255, 0.1);
+		color: #fff;
+		border-radius: 8px;
+		text-decoration: none;
+		font-size: 0.9rem;
+		transition: all 0.3s ease;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.btn-manual:hover {
+		background: var(--link);
+		border-color: var(--link);
+		transform: translateY(-2px);
+	}
+
+	/* Loader Animation */
+	.loader-ring {
+		display: inline-block;
+		position: relative;
+		width: 64px;
+		height: 64px;
+		margin-bottom: 10px;
+	}
+	.loader-ring div {
+		box-sizing: border-box;
+		display: block;
+		position: absolute;
+		width: 51px;
+		height: 51px;
+		margin: 6px;
+		border: 3px solid var(--gold);
+		border-radius: 50%;
+		animation: loader-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+		border-color: var(--gold) transparent transparent transparent;
+	}
+	.loader-ring div:nth-child(1) { animation-delay: -0.45s; }
+	.loader-ring div:nth-child(2) { animation-delay: -0.3s; }
+	.loader-ring div:nth-child(3) { animation-delay: -0.15s; }
+	
+	@keyframes loader-ring {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
+	}
+</style>
+
+<script>
+	const urlParams = new URLSearchParams(window.location.search);
+	const m = urlParams.get('m');
+	
+	let targetUrl = '/obras/MeC_CdH/media';
+	if (m) {
+		targetUrl += `?m=${m}`;
+	}
+
+	// Update manual link
+	const manualLink = document.getElementById('manual-link') as HTMLAnchorElement;
+	if (manualLink) manualLink.href = targetUrl;
+
+	window.location.href = targetUrl;
+
+</script>
