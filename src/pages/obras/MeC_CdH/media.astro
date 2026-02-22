@@ -721,38 +721,67 @@ const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
 	// Player Logic
 	function playMedia(filename: string, type: string, cover?: string) {
 		const src = filename.startsWith('http') ? filename : `/livro_media/${filename}`;
-		let html = '';
+		
+		if (!playerContainer) return;
+		playerContainer.innerHTML = ''; // Clear container
+
 		if (type === 'video') {
-			html = `
-				<video id="activePlayer" controls autoplay playsinline preload="metadata">
-					<source src="${src}" type="video/mp4">
-					O seu browser não suporta vídeos.
-				</video>
-			`;
+			const video = document.createElement('video');
+			video.id = 'activePlayer';
+			video.controls = true;
+			video.autoplay = true;
+			video.playsInline = true;
+			video.setAttribute('webkit-playsinline', 'true');
+			video.preload = 'auto';
+			
+			// Direct src attribute is often more reliable on iOS than <source> tags in innerHTML
+			video.src = src;
+			
+			// Help with Range requests/CORS on some mobile browsers
+			video.crossOrigin = 'anonymous';
+			
+			playerContainer.appendChild(video);
+			
+			video.addEventListener('ended', handleMediaEnded);
+			
+			// Force load and handle play promise
+			video.load();
+			const playPromise = video.play();
+			if (playPromise !== undefined) {
+				playPromise.catch(error => {
+					console.warn("Autoplay was prevented, user may need to click play:", error);
+				});
+			}
 		} else {
+			// Audio logic
+			const wrapper = document.createElement('div');
+			wrapper.className = 'audio-wrapper';
+			
 			if (cover) {
-				html = `
-					<div class="audio-wrapper">
-						<img src="${cover}" class="audio-cover" alt="Cover" />
-						<audio id="activePlayer" src="${src}" controls autoplay></audio>
-					</div>
-				`;
+				const img = document.createElement('img');
+				img.src = cover;
+				img.className = 'audio-cover';
+				img.alt = 'Cover';
+				wrapper.appendChild(img);
 			} else {
-				// Fallback layout similar to video player
-				html = `
-					<div class="audio-wrapper">
-						<div class="audio-placeholder">🎵</div>
-						<audio id="activePlayer" src="${src}" controls autoplay></audio>
-					</div>
-				`;
+				const placeholder = document.createElement('div');
+				placeholder.className = 'audio-placeholder';
+				placeholder.textContent = '🎵';
+				wrapper.appendChild(placeholder);
 			}
-		}
-		if (playerContainer) {
-			playerContainer.innerHTML = html;
-			const player = document.getElementById('activePlayer') as HTMLMediaElement;
-			if (player) {
-				player.addEventListener('ended', handleMediaEnded);
-			}
+			
+			const audio = document.createElement('audio');
+			audio.id = 'activePlayer';
+			audio.src = src;
+			audio.controls = true;
+			audio.autoplay = true;
+			audio.crossOrigin = 'anonymous';
+			
+			wrapper.appendChild(audio);
+			playerContainer.appendChild(wrapper);
+			
+			audio.addEventListener('ended', handleMediaEnded);
+			audio.play().catch(() => {});
 		}
 	}
 
