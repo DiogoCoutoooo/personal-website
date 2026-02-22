@@ -721,90 +721,33 @@ const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
 	// Player Logic
 	function playMedia(filename: string, type: string, cover?: string) {
 		const src = filename.startsWith('http') ? filename : `/livro_media/${filename}`;
-		
-		if (!playerContainer) return;
-		playerContainer.innerHTML = ''; 
-
+		let html = '';
 		if (type === 'video') {
-			const video = document.createElement('video');
-			video.id = 'activePlayer';
-			video.controls = true;
-			video.playsInline = true;
-			video.setAttribute('webkit-playsinline', 'true');
-			video.preload = 'auto'; // iOS Safari likes 'auto' for dynamic sources
-			
-			// Safari handles range requests better when src is set directly on the video element
-			video.src = src;
-			
-			playerContainer.appendChild(video);
-			
-			video.addEventListener('ended', handleMediaEnded);
-			
-			// Error handling UI
-			video.addEventListener('error', (e) => {
-				console.error("Video Error:", video.error);
-				if (playerContainer) {
-					playerContainer.innerHTML = `
-						<div class="error-message" style="color: white; text-align: center; padding: 20px;">
-							<p>Erro ao carregar o vídeo.</p>
-							<a href="${src}" target="_blank" style="color: var(--gold); text-decoration: underline;">Tentar abrir link direto</a>
-						</div>
-					`;
-				}
-			});
-
-			// Attempt to play
-			const startPlayback = () => {
-				const playPromise = video.play();
-				if (playPromise !== undefined) {
-					playPromise.catch(error => {
-						console.error("Playback failed, showing manual play button:", error);
-						// If playback fails (e.g. autoplay block), show a play button overlay
-						const playOverlay = document.createElement('div');
-						playOverlay.innerHTML = '<button style="background: var(--gold); color: black; border: none; padding: 15px 30px; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 1.2rem;">REDUZIR / PLAY</button>';
-						playOverlay.style.position = 'absolute';
-						playOverlay.style.zIndex = '100';
-						playOverlay.onclick = () => {
-							video.play();
-							playOverlay.remove();
-						};
-						playerContainer.appendChild(playOverlay);
-					});
-				}
-			};
-
-			video.load();
-			startPlayback();
-
+			html = `<video id="activePlayer" src="${src}" controls autoplay playsinline></video>`;
 		} else {
-			// Audio logic
-			const wrapper = document.createElement('div');
-			wrapper.className = 'audio-wrapper';
-			
 			if (cover) {
-				const img = document.createElement('img');
-				img.src = cover;
-				img.className = 'audio-cover';
-				img.alt = 'Cover';
-				wrapper.appendChild(img);
+				html = `
+					<div class="audio-wrapper">
+						<img src="${cover}" class="audio-cover" alt="Cover" />
+						<audio id="activePlayer" src="${src}" controls autoplay></audio>
+					</div>
+				`;
 			} else {
-				const placeholder = document.createElement('div');
-				placeholder.className = 'audio-placeholder';
-				placeholder.textContent = '🎵';
-				wrapper.appendChild(placeholder);
+				// Fallback layout similar to video player
+				html = `
+					<div class="audio-wrapper">
+						<div class="audio-placeholder">🎵</div>
+						<audio id="activePlayer" src="${src}" controls autoplay></audio>
+					</div>
+				`;
 			}
-			
-			const audio = document.createElement('audio');
-			audio.id = 'activePlayer';
-			audio.controls = true;
-			audio.src = src;
-			
-			wrapper.appendChild(audio);
-			playerContainer.appendChild(wrapper);
-			
-			audio.addEventListener('ended', handleMediaEnded);
-			audio.load();
-			audio.play().catch(() => {});
+		}
+		if (playerContainer) {
+			playerContainer.innerHTML = html;
+			const player = document.getElementById('activePlayer') as HTMLMediaElement;
+			if (player) {
+				player.addEventListener('ended', handleMediaEnded);
+			}
 		}
 	}
 
