@@ -54,7 +54,7 @@ const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
 								) : item.type === 'video' ? (
 									<video 
 										data-src={(item.filename || '').startsWith('http') ? `${item.filename}#t=0.1` : `/livro_media/${item.filename}#t=0.1`} 
-										preload="none" 
+										preload="metadata" 
 										muted 
 										playsinline
 										class="thumbnail-video lazy-video"
@@ -723,7 +723,12 @@ const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
 		const src = filename.startsWith('http') ? filename : `/livro_media/${filename}`;
 		let html = '';
 		if (type === 'video') {
-			html = `<video id="activePlayer" src="${src}" controls autoplay playsinline></video>`;
+			html = `
+				<video id="activePlayer" controls autoplay playsinline preload="metadata">
+					<source src="${src}" type="video/mp4">
+					O seu browser não suporta vídeos.
+				</video>
+			`;
 		} else {
 			if (cover) {
 				html = `
