@@ -1,19 +1,20 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
+import midiaData from '../../../data/midia.json';
 ---
 
-<Layout title="Leitor — Turismo em 50 Anos de Democracia" description="Leia uma amostra do livro Turismo em 50 Anos de Democracia.">
+<Layout title="Leitor — Coluna de Harmonia, Madrugada em Clave" description="Leia uma amostra do livro Coluna de Harmonia, Madrugada em Clave.">
     <div class="reader-container">
         <!-- Header Controls -->
         <header class="reader-header">
             <div class="header-left">
-                <a href="/obras/Te50AdD" class="back-link">
+                <a href="/obras/MeC_CdH" class="back-link">
                     <span class="icon">✕</span>
                     <span class="text">Sair do Leitor</span>
                 </a>
             </div>
             <div class="header-center">
-                <h1 class="book-title-mini">Turismo em 50 Anos de Democracia</h1>
+                <h1 class="book-title-mini">Coluna de Harmonia, Madrugada em Clave</h1>
             </div>
             <div class="header-right">
                 <span id="page-counter">A carregar...</span>
@@ -60,15 +61,45 @@ import Layout from '../../../layouts/Layout.astro';
             <div class="loader"></div>
             <p>A preparar a sua leitura...</p>
         </div>
+
+        <!-- Player Modal -->
+        <div id="playerModal" class="player-modal hidden">
+            <div class="modal-overlay"></div>
+            
+            <div class="modal-content">
+                <button class="minimize-modal" aria-label="Minimizar/Maximizar">
+                    <svg class="icon-min" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <svg class="icon-max" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                </button>
+                <button class="close-modal" aria-label="Fechar">&times;</button>
+                <div id="playerContainer" class="player-container">
+                    <!-- Player or Album List will be injected here -->
+                </div>
+                <div id="dragOverlay" class="drag-overlay"></div>
+                <div class="modal-info">
+                    <div class="modal-header-info">
+                        <span id="modalNumber"></span>
+                        <h2 id="modalTitle"></h2>
+                    </div>
+                    <div id="albumTrackList" class="album-track-list hidden">
+                        <!-- Track list for albums -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </Layout>
+
+<script is:inline define:vars={{ midiaData }}>
+    window.MIDIA_DATA = midiaData;
+</script>
 
 <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 <script is:inline src="https://unpkg.com/page-flip/dist/js/page-flip.browser.js"></script>
 
 <script is:inline>
     // Configuration
-    const PDF_PATH = 'https://media.antonioabrantes.com/livro_Te50AdD.pdf';
+    const PDF_PATH = 'https://media.antonioabrantes.com/MAD_CH_6023-25_LIVRO_AS_Tamanho_Envelope%20C5_TRABALHO_PC_Final%20.pdf';
     let pdfDoc = null;
     let pageFlip = null;
     
@@ -176,6 +207,7 @@ import Layout from '../../../layouts/Layout.astro';
                     container.classList.remove('is-fullscreen');
                 }
                 
+                // Allow page flip to recalculate sizes immediately
                 setTimeout(() => {
                     if(pageFlip) pageFlip.update();
                 }, 100);
@@ -223,6 +255,7 @@ import Layout from '../../../layouts/Layout.astro';
 
             for (const anno of annotations) {
                 if (anno.subtype !== 'Link') continue;
+                // Skip annotations that have neither url nor dest
                 if (!anno.url && !anno.dest) continue;
 
                 const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(anno.rect);
@@ -247,12 +280,14 @@ import Layout from '../../../layouts/Layout.astro';
 
                     try {
                         if (typeof anno.dest === 'string') {
+                            // Named destination - resolver via PDF
                             const dest = await pdfDoc.getDestination(anno.dest);
                             if (dest) {
                                 const pageIndex = await pdfDoc.getPageIndex(dest[0]);
                                 targetPageNum = pageIndex + 1;
                             }
                         } else if (Array.isArray(anno.dest)) {
+                            // Explicit destination array: [pageRef, ...]
                             const pageIndex = await pdfDoc.getPageIndex(anno.dest[0]);
                             targetPageNum = pageIndex + 1;
                         }
@@ -268,9 +303,26 @@ import Layout from '../../../layouts/Layout.astro';
                         });
                     }
                 } else if (anno.url) {
-                    linkEl.href = anno.url;
-                    linkEl.target = '_blank';
-                    linkEl.addEventListener('click', (e) => e.stopPropagation());
+                    try {
+                        const aUrl = new URL(anno.url, window.location.origin);
+                        const mParam = aUrl.searchParams.get('m');
+                        
+                        if (mParam) {
+                            // Link para Media (Interceptar)
+                            linkEl.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openItem(parseInt(mParam));
+                            });
+                        } else {
+                            // Link normal
+                            linkEl.href = anno.url;
+                            linkEl.target = '_blank';
+                            linkEl.addEventListener('click', (e) => e.stopPropagation());
+                        }
+                    } catch (e) {
+                        // URL Invalida
+                    }
                 }
 
                 linksContainer.appendChild(linkEl);
@@ -316,20 +368,209 @@ import Layout from '../../../layouts/Layout.astro';
             }
         }
         
-        // Update page counter text
         pageCounter.textContent = `${displayPages} / ${total}`;
         
-        // Sync slider value
-        // If in spread mode, only update the slider if it's NOT already pointing 
-        // to one of the pages currently being displayed.
         const sliderVal = parseInt(pageSlider.value);
         if (!visiblePages.includes(sliderVal)) {
             pageSlider.value = current;
         }
-        
-        // Always update the fill based on the slider's current physical value
         updateSliderFill(parseInt(pageSlider.value));
     }
+
+    // Modal Logic
+    let currentAlbumTracks = [];
+    const playerModal = document.getElementById('playerModal');
+    const playerContainer = document.getElementById('playerContainer');
+    const albumTrackList = document.getElementById('albumTrackList');
+
+    function playMedia(filename, type, cover) {
+        const src = filename.startsWith('http') ? filename : `/livro_media/${filename}`;
+        let html = '';
+        if (type === 'video') {
+            html = `<video id="activePlayer" src="${src}" controls autoplay playsinline style="width:100%;height:100%;object-fit:contain;"></video>`;
+        } else {
+            if (cover) {
+                html = `
+                    <div class="audio-wrapper" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+                        <img src="${cover}" class="audio-cover" style="max-height:60vh;max-width:100%;object-fit:contain;margin-bottom:20px;" alt="Cover" />
+                        <audio id="activePlayer" src="${src}" controls autoplay style="width:80%;max-width:600px;"></audio>
+                    </div>`;
+            } else {
+                html = `
+                    <div class="audio-wrapper" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+                        <div class="audio-placeholder" style="font-size:5rem;color:rgba(255,255,255,0.2);margin-bottom:20px;">🎵</div>
+                        <audio id="activePlayer" src="${src}" controls autoplay style="width:80%;max-width:600px;"></audio>
+                    </div>`;
+            }
+        }
+        playerContainer.innerHTML = html;
+        const player = document.getElementById('activePlayer');
+        if(player) {
+            player.addEventListener('play', () => { window.isMediaPlaying = true; });
+            player.addEventListener('pause', () => { window.isMediaPlaying = false; });
+            player.addEventListener('ended', handleMediaEnded);
+        }
+    }
+
+    function handleMediaEnded() {
+        if (currentAlbumTracks && currentAlbumTracks.length > 0) {
+            const currentAudio = document.getElementById('activePlayer').src;
+            const currentIdx = currentAlbumTracks.findIndex(t => currentAudio.includes(t.filename.split('/').pop()));
+            if (currentIdx !== -1 && currentIdx < currentAlbumTracks.length - 1) {
+                playAlbumTrack(currentAlbumTracks[currentIdx + 1], currentIdx + 1);
+            }
+        }
+    }
+
+    function playAlbumTrack(track, index) {
+        const tracks = albumTrackList.querySelectorAll('.track-item');
+        tracks.forEach(t => t.classList.remove('active'));
+        if(tracks[index]) tracks[index].classList.add('active');
+        playMedia(track.filename, track.type, track.cover);
+    }
+
+    function openItem(id) {
+        if(!window.MIDIA_DATA) return;
+        const item = window.MIDIA_DATA.find(m => m.id == id);
+        if(!item) return;
+        
+        document.getElementById('modalTitle').textContent = item.title;
+        document.getElementById('modalNumber').textContent = `#${id}`;
+        
+        albumTrackList.classList.add('hidden');
+        playerContainer.innerHTML = '';
+        currentAlbumTracks = [];
+        
+        if (item.type === 'album') {
+            currentAlbumTracks = item.tracks;
+            albumTrackList.classList.remove('hidden');
+            albumTrackList.innerHTML = item.tracks.map((track, idx) => `
+                <div class="track-item" data-idx="${idx}" style="cursor:pointer;padding:8px 12px;margin-bottom:4px;background:rgba(255,255,255,0.05);border-radius:4px;">
+                    <span style="font-size:0.9rem;margin-right:8px;">${track.type === 'video' ? '📺' : '🎵'}</span>
+                    <span style="font-size:0.85rem;">${track.title}</span>
+                </div>
+            `).join('');
+            
+            const trackElements = albumTrackList.querySelectorAll('.track-item');
+            trackElements.forEach(el => {
+                el.addEventListener('click', () => {
+                    const idx = parseInt(el.dataset.idx);
+                    playAlbumTrack(currentAlbumTracks[idx], idx);
+                });
+            });
+
+            if (currentAlbumTracks.length > 0) {
+                playAlbumTrack(currentAlbumTracks[0], 0);
+            }
+        } else {
+            playMedia(item.filename, item.type, item.cover);
+        }
+        
+        playerModal.classList.remove('hidden');
+    }
+
+    function closePlayer() {
+        playerModal.classList.add('hidden');
+        playerModal.classList.remove('minimized');
+        playerContainer.innerHTML = '';
+        const player = document.getElementById('activePlayer');
+        if (player) {
+            player.pause();
+            player.src = '';
+        }
+    }
+
+    document.querySelector('.minimize-modal').addEventListener('click', () => {
+        playerModal.classList.toggle('minimized');
+        // Reset position when minimizing so it starts at default spot
+        if (playerModal.classList.contains('minimized')) {
+            playerModal.style.removeProperty('left');
+            playerModal.style.removeProperty('top');
+            playerModal.style.bottom = '80px';
+            playerModal.style.right = '40px';
+        } else {
+            // Reset inline styles when maximizing
+            playerModal.style.removeProperty('left');
+            playerModal.style.removeProperty('top');
+            playerModal.style.removeProperty('bottom');
+            playerModal.style.removeProperty('right');
+        }
+    });
+
+    // Drag support for minimized player
+    let isDragging = false;
+    let dragStartX, dragStartY, modalStartX, modalStartY;
+
+    playerModal.addEventListener('mousedown', (e) => {
+        if (!playerModal.classList.contains('minimized')) return;
+        const dragOverlay = document.getElementById('dragOverlay');
+        // Only drag from the overlay area
+        if (e.target !== dragOverlay) return;
+
+        isDragging = true;
+        const rect = playerModal.getBoundingClientRect();
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        modalStartX = rect.left;
+        modalStartY = rect.top;
+        playerModal.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        // Switch from bottom/right positioning to top/left for free movement
+        playerModal.style.bottom = 'auto';
+        playerModal.style.right = 'auto';
+        playerModal.style.left = (modalStartX + dx) + 'px';
+        playerModal.style.top = (modalStartY + dy) + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            playerModal.style.cursor = '';
+        }
+    });
+
+    // Touch support for mobile drag
+    playerModal.addEventListener('touchstart', (e) => {
+        if (!playerModal.classList.contains('minimized')) return;
+        const dragOverlay = document.getElementById('dragOverlay');
+        if (e.target !== dragOverlay) return;
+
+        isDragging = true;
+        const rect = playerModal.getBoundingClientRect();
+        const touch = e.touches[0];
+        dragStartX = touch.clientX;
+        dragStartY = touch.clientY;
+        modalStartX = rect.left;
+        modalStartY = rect.top;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        const dx = touch.clientX - dragStartX;
+        const dy = touch.clientY - dragStartY;
+        playerModal.style.bottom = 'auto';
+        playerModal.style.right = 'auto';
+        playerModal.style.left = (modalStartX + dx) + 'px';
+        playerModal.style.top = (modalStartY + dy) + 'px';
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+        isDragging = false;
+    });
+
+    document.querySelector('.close-modal').addEventListener('click', closePlayer);
+    document.querySelector('.modal-overlay').addEventListener('click', () => {
+        if (!playerModal.classList.contains('minimized')) {
+            closePlayer();
+        }
+    });
 
     // Start
     window.addEventListener('DOMContentLoaded', initReader);
@@ -641,11 +882,11 @@ import Layout from '../../../layouts/Layout.astro';
     }
     
     .reader-container.is-fullscreen .reader-shell {
-        padding: 4vh 4vw 70px 4vw; /* Keep clear of the invisible footer */
+        padding: 4vh 4vw 70px 4vw;
     }
 
     .reader-container.is-fullscreen .book-bounds {
-        max-width: 80vw;
+        max-width: 83vw;
         max-height: calc(100vh - 160px);
     }
     
@@ -663,5 +904,88 @@ import Layout from '../../../layouts/Layout.astro';
 
     .reader-container.is-fullscreen .reader-footer:hover {
         opacity: 1;
+    }
+
+    /* Modal */
+    .player-modal { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 2vh; transition: padding 0.3s; }
+    .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); transition: opacity 0.3s; }
+    .modal-content { position: relative; background: #000; width: 95vw; max-width: 1200px; height: 95vh; max-height: 800px; border-radius: 12px; overflow: hidden; box-shadow: 0 0 60px rgba(0,0,0,1); border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+    
+    .minimize-modal { position: absolute; top: 15px; right: 65px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid rgba(255,255,255,0.1); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 20; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .minimize-modal:hover { background: rgba(255,255,255,0.2); }
+    .minimize-modal .icon-max { display: none; }
+    
+    .close-modal { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid rgba(255,255,255,0.1); font-size: 20px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 20; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .close-modal:hover { background: rgba(255,50,50,0.8); transform: rotate(90deg); }
+    .player-container { background: #000; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; padding: 2vh 2vw; z-index: 10; transition: padding 0.3s; }
+    .modal-info { padding: 20px 30px; background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; position: relative; z-index: 15; opacity: 1; transition: opacity 0.3s; }
+    #modalNumber { color: var(--reader-accent); font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.25em; display: block; margin-bottom: 4px; }
+    #modalTitle { font-size: 1.25rem; font-weight: 600; margin: 0; line-height: 1.3; color: #fff; }
+    .album-track-list { margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; max-height: 20vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent; }
+    .hidden { display: none !important; }
+    .track-item { opacity: 0.7; }
+    .track-item:hover, .track-item.active { opacity: 1; }
+    .track-item.active { background: rgba(212, 175, 55, 0.1) !important; border-left: 3px solid var(--reader-accent); }
+
+    /* Minimized State */
+    .player-modal.minimized {
+        top: auto;
+        left: auto;
+        bottom: 80px;
+        right: 40px;
+        width: 360px;
+        height: 220px;
+        padding: 0;
+    }
+    .player-modal.minimized .modal-overlay {
+        opacity: 0;
+        pointer-events: none;
+    }
+    .player-modal.minimized .modal-content {
+        width: 100%;
+        height: 100%;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    }
+    .player-modal.minimized .modal-info {
+        opacity: 0;
+        height: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+    .player-modal.minimized .player-container {
+        padding: 0;
+    }
+    .player-modal.minimized .minimize-modal {
+        top: 8px; right: 45px; width: 32px; height: 32px;
+    }
+    .player-modal.minimized .close-modal {
+        top: 8px; right: 8px; width: 32px; height: 32px; font-size: 16px;
+    }
+    .player-modal.minimized .minimize-modal .icon-min { display: none; }
+    .player-modal.minimized .minimize-modal .icon-max { display: block; }
+    .player-modal.minimized .audio-cover { display: none; }
+    .player-modal.minimized .audio-placeholder { font-size: 3rem; margin-bottom: 10px; margin-top: 10px; }
+
+    /* Drag overlay - only visible when minimized, sits on top of video but below controls bar */
+    .drag-overlay {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 40px; /* Leave space for native video controls at the bottom */
+        z-index: 11;
+        cursor: grab;
+    }
+    .drag-overlay:active { cursor: grabbing; }
+    .player-modal.minimized .drag-overlay { display: block; }
+
+    @media (max-width: 768px) {
+        .player-modal.minimized {
+            bottom: 80px;
+            right: 20px;
+            width: 280px;
+            height: 160px;
+        }
     }
 </style>
