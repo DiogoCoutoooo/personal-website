@@ -133,6 +133,7 @@ import midiaData from '../../../data/midia.json';
             const pageAspectRatio = vp.width / vp.height;
             const baseHeight = 800;
             const baseWidth = baseHeight * pageAspectRatio;
+            const isMobile = window.innerWidth <= 768;
 
             pageFlip = new St.PageFlip(bookContainer, {
                 width: baseWidth,
@@ -144,7 +145,8 @@ import midiaData from '../../../data/midia.json';
                 maxHeight: 2000,
                 maxShadowOpacity: 0.5,
                 showCover: true,
-                mobileScrollSupport: false
+                mobileScrollSupport: false,
+                useMouseEvents: !isMobile
             });
 
             // Create page placeholders
@@ -891,6 +893,9 @@ import midiaData from '../../../data/midia.json';
     @media (max-width: 768px) {
         .reader-shell {
             padding: 20px 40px;
+        }
+        .book {
+            touch-action: auto !important;
         }
         .nav-btn {
             width: 40px;

@@ -102,6 +102,7 @@ import Layout from '../../../layouts/Layout.astro';
             const pageAspectRatio = vp.width / vp.height;
             const baseHeight = 800;
             const baseWidth = baseHeight * pageAspectRatio;
+            const isMobile = window.innerWidth <= 768;
 
             pageFlip = new St.PageFlip(bookContainer, {
                 width: baseWidth,
@@ -113,7 +114,8 @@ import Layout from '../../../layouts/Layout.astro';
                 maxHeight: 2000,
                 maxShadowOpacity: 0.5,
                 showCover: true,
-                mobileScrollSupport: false
+                mobileScrollSupport: false,
+                useMouseEvents: !isMobile
             });
 
             // Create page placeholders
@@ -650,6 +652,9 @@ import Layout from '../../../layouts/Layout.astro';
     @media (max-width: 768px) {
         .reader-shell {
             padding: 20px 40px;
+        }
+        .book {
+            touch-action: auto !important;
         }
         .nav-btn {
             width: 40px;
