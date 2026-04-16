@@ -153,14 +153,6 @@
   },
   {
     "id": 21,
-    "title": "Angels Airwaves - The Adventure Acoustic Lyric Video",
-    "filename": "https://media.antonioabrantes.com/21.mp4",
-    "type": "video",
-    "extension": "mp4",
-    "cover": "/covers/cover-21.jpg"
-  },
-  {
-    "id": 22,
     "title": "ESQUADRO E COMPASSO",
     "filename": "https://media.antonioabrantes.com/22.mp4",
     "type": "video",
@@ -168,7 +160,7 @@
     "cover": "/covers/cover-22.jpg"
   },
   {
-    "id": 23,
+    "id": 22,
     "title": "Alison Balsom Haydn Trumpet Concerto in Eb 1st mov. Allegro",
     "filename": "https://media.antonioabrantes.com/23.mp4",
     "type": "video",
@@ -176,7 +168,7 @@
     "cover": "/covers/cover-23.jpg"
   },
   {
-    "id": 24,
+    "id": 23,
     "title": "John Philip Sousa - Eight selected Marches for orchestra 1888-99 conducted by John Williams",
     "filename": "https://media.antonioabrantes.com/24.mp4",
     "type": "video",
@@ -184,7 +176,7 @@
     "cover": "/covers/cover-24.jpg"
   },
   {
-    "id": 25,
+    "id": 24,
     "title": "Vivaldi Four Seasons - Autumn Autunno Full original version. Carla Moore Voices of Music RV 293",
     "filename": "https://media.antonioabrantes.com/25.mp4",
     "type": "video",
@@ -192,7 +184,7 @@
     "cover": "/covers/cover-25.jpg"
   },
   {
-    "id": 26,
+    "id": 25,
     "title": "Florence Price - Symphony No. 1 in E minor",
     "filename": "https://media.antonioabrantes.com/26.mp4",
     "type": "video",
@@ -200,7 +192,7 @@
     "cover": "/covers/cover-26.jpg"
   },
   {
-    "id": 27,
+    "id": 26,
     "title": "The Promise",
     "filename": "https://media.antonioabrantes.com/27.mp4",
     "type": "video",
@@ -208,7 +200,7 @@
     "cover": "/covers/cover-27.jpg"
   },
   {
-    "id": 28,
+    "id": 27,
     "title": "Kosma Joseph - Autumn leaves - Alison Balsom transcribed flugelhorn solo - Live in London",
     "filename": "https://media.antonioabrantes.com/28.mp4",
     "type": "video",
@@ -216,12 +208,20 @@
     "cover": "/covers/cover-28.jpg"
   },
   {
+    "id": 28,
+    "title": "Joséphine Baker - J'attendrai",
+    "filename": "https://media.antonioabrantes.com/21.mp4",
+    "type": "video",
+    "extension": "mp4",
+    "cover": "/covers/cover-21.jpg"
+  },
+  {
     "id": 29,
-    "title": "Josephine Baker - Succes et raretes 1953-1959 Collection 78 tours... et puis s en vont",
+    "title": "Rina Ketty - J'attendrai (letra)",
     "filename": "https://media.antonioabrantes.com/29.mp4",
     "type": "video",
     "extension": "mp4",
-    "cover": "/covers/cover-29.jpg"
+    "cover": "/covers/cover-29.png"
   },
   {
     "id": 30,
@@ -241,71 +241,10 @@
   },
   {
     "id": 32,
-    "title": "Are All Present Masons",
-    "type": "album",
     "cover": "/covers/cover-32.jpg",
-    "tracks": [
-      {
-        "title": "Are All Present Masons",
-        "filename": "https://media.antonioabrantes.com/32 - 1.mp3",
-        "type": "audio"
-      },
-      {
-        "title": "Chain of Union",
-        "filename": "https://media.antonioabrantes.com/32 - 2.mp3",
-        "type": "audio"
-      },
-      {
-        "title": "Design of Lodge",
-        "filename": "https://media.antonioabrantes.com/32 - 3.mp3",
-        "type": "audio"
-      },
-      {
-        "title": "End of Work",
-        "filename": "https://media.antonioabrantes.com/32 - 4.mp3",
-        "type": "audio"
-      },
-      {
-        "title": "Entered Apprentice Opening",
-        "filename": "https://media.antonioabrantes.com/32 - 5.mp3",
-        "type": "audio"
-      },
-      {
-        "title": "Guest Entrance",
-        "filename": "https://media.antonioabrantes.com/32 - 6.mp3",
-        "type": "audio"
-      },
-      {
-        "title": "Offers and Proposals",
-        "filename": "https://media.antonioabrantes.com/32 - 7.mp3",
-        "type": "audio"
-      },
-      {
-        "title": "Opening the Sacred Book",
-        "filename": "https://media.antonioabrantes.com/32 - 8.mp3",
-        "type": "audio"
-      },
-      {
-        "title": "Sacred Book Closure",
-        "filename": "https://media.antonioabrantes.com/32 - 9.mp3",
-        "type": "audio"
-      },
-      {
-        "title": "Sacred Word and Deacons",
-        "filename": "https://media.antonioabrantes.com/32 - 10.mp3",
-        "type": "audio"
-      },
-      {
-        "title": "The Three Great Lights Off",
-        "filename": "https://media.antonioabrantes.com/32 - 11.mp3",
-        "type": "audio"
-      },
-      {
-        "title": "The Three Great Lights",
-        "filename": "https://media.antonioabrantes.com/32 - 12.mp3",
-        "type": "audio"
-      }
-    ]
+    "title": "Guest Entrance",
+    "filename": "https://media.antonioabrantes.com/32 - 6.mp3",
+    "type": "audio"
   },
   {
     "id": 33,
@@ -3549,7 +3488,7 @@
     "cover": "/covers/cover-432.jpg"
   },
   {
-    "id": 434,
+    "id": 433,
     "title": "Durvalino Meu Rei",
     "filename": "https://media.antonioabrantes.com/434.mp4",
     "type": "video",
@@ -3665,7 +3604,7 @@
     "cover": null
   },
   {
-    "id": 433,
+    "id": 434,
     "title": "Lino Guerreiro",
     "filename": "/websites/lino guerreiro - 433/bio – Lino Guerreiro.htm",
     "type": "website",
