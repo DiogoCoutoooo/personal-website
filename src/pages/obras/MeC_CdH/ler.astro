@@ -5,6 +5,11 @@ import midiaData from '../../../data/midia.json';
 
 <Layout title="Leitor — Coluna de Harmonia, Madrugada em Clave" description="Leia uma amostra do livro Coluna de Harmonia, Madrugada em Clave.">
     <div class="reader-container">
+        <!-- Floating Exit Fullscreen Button (Always accessible in fullscreen) -->
+        <button id="btn-floating-exit-fs" class="floating-exit-fs" title="Sair do Ecrã Inteiro" aria-label="Sair do Ecrã Inteiro">
+            <svg viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+        </button>
+
         <!-- Header Controls -->
         <header class="reader-header">
             <div class="header-left">
@@ -17,8 +22,9 @@ import midiaData from '../../../data/midia.json';
                 <h1 class="book-title-mini">Coluna de Harmonia, Madrugada em Clave</h1>
             </div>
             <div id="btn-fullscreen-header" class="header-right header-fullscreen-btn">
-                 <button class="footer-btn" title="Ecrã Inteiro">
-                    <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                 <button class="footer-btn" title="Ecrã Inteiro" aria-label="Ecrã Inteiro">
+                    <svg class="icon-enter-fs" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                    <svg class="icon-exit-fs" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
                 </button>
             </div>
             <div class="header-right page-counter-container">
@@ -49,13 +55,17 @@ import midiaData from '../../../data/midia.json';
         <footer class="reader-footer">
             <div class="footer-controls">
                 <div class="page-slider-container">
-                    <span class="slider-label">1</span>
-                    <input type="range" id="page-slider" min="1" max="1" value="1" step="1">
-                    <span id="slider-total-label" class="slider-label">...</span>
+                    <input type="number" id="page-input" class="page-input" value="0" min="0" max="605" aria-label="Ir para página">
+                    <div class="slider-wrapper">
+                        <input type="range" id="page-slider" min="0" max="605" value="0" step="1">
+                        <div id="slider-tooltip" class="slider-tooltip hidden">0</div>
+                    </div>
+                    <span id="slider-total-label" class="slider-label">605</span>
                 </div>
                 <div class="footer-right">
-                    <button id="btn-fullscreen" class="footer-btn" title="Ecrã Inteiro">
-                        <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                    <button id="btn-fullscreen" class="footer-btn" title="Ecrã Inteiro" aria-label="Ecrã Inteiro">
+                        <svg class="icon-enter-fs" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                        <svg class="icon-exit-fs" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
                     </button>
                 </div>
             </div>
@@ -112,6 +122,8 @@ import midiaData from '../../../data/midia.json';
     const bookContainer = document.getElementById('book');
     const pageCounter = document.getElementById('page-counter');
     const pageSlider = document.getElementById('page-slider');
+    const pageInput = document.getElementById('page-input');
+    const sliderTooltip = document.getElementById('slider-tooltip');
     const btnPrev = document.getElementById('btn-prev');
     const btnNext = document.getElementById('btn-next');
     const btnFullscreen = document.getElementById('btn-fullscreen');
@@ -124,8 +136,12 @@ import midiaData from '../../../data/midia.json';
             // Load PDF
             pdfDoc = await pdfjsLib.getDocument(PDF_PATH).promise;
             const totalPages = pdfDoc.numPages;
+            const maxPage = totalPages - 1;
             
-            pageSlider.max = totalPages;
+            pageSlider.min = 0;
+            pageSlider.max = maxPage;
+            pageInput.min = 0;
+            pageInput.max = maxPage;
             
             // We need to determine the aspect ratio from the first page
             const firstPage = await pdfDoc.getPage(1);
@@ -133,24 +149,46 @@ import midiaData from '../../../data/midia.json';
             const pageAspectRatio = vp.width / vp.height;
             const baseHeight = 800;
             const baseWidth = baseHeight * pageAspectRatio;
-            const isMobile = window.innerWidth <= 768;
+
+            function isMobileOrTablet() {
+                const ua = navigator.userAgent || '';
+                const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+                const isSmallOrTabletScreen = window.innerWidth <= 1024;
+                return isMobileUA || (isTouch && isSmallOrTabletScreen) || isSmallOrTabletScreen;
+            }
+
+            // Check URL parameters for page and media
+            const urlParams = new URLSearchParams(window.location.search);
+            const pageParam = urlParams.get('p');
+            const mediaParam = urlParams.get('m');
+            const timeParam = urlParams.get('t');
+            const trackParam = urlParams.get('tr');
+
+            let initialPage = 0;
+            if (pageParam) {
+                const parsed = parseInt(pageParam);
+                if (!isNaN(parsed) && parsed >= 0 && parsed <= maxPage) {
+                    initialPage = parsed;
+                }
+            }
 
             pageFlip = new St.PageFlip(bookContainer, {
                 width: baseWidth,
                 height: baseHeight,
                 size: "stretch",
-                minWidth: 200,
+                minWidth: 100,
                 maxWidth: 2000,
-                minHeight: 300,
+                minHeight: 100,
                 maxHeight: 2000,
                 maxShadowOpacity: 0.5,
                 showCover: true,
                 mobileScrollSupport: false,
-                useMouseEvents: !isMobile
+                useMouseEvents: true
             });
 
-            // Create page placeholders
-            for (let i = 1; i <= totalPages; i++) {
+            // Create page placeholders (0 to maxPage)
+            for (let i = 0; i < totalPages; i++) {
                 const pageEl = document.createElement('div');
                 pageEl.className = 'page';
                 pageEl.innerHTML = `
@@ -162,7 +200,60 @@ import midiaData from '../../../data/midia.json';
             }
 
             pageFlip.loadFromHTML(document.querySelectorAll('.page'));
-            document.getElementById('slider-total-label').textContent = totalPages;
+            document.getElementById('slider-total-label').textContent = maxPage;
+
+            // Customize bounds calculation so that mobile/tablets maximize ONE page
+            const render = pageFlip.getRender();
+            if (render) {
+                render.calculateBoundsRect = function() {
+                    let t = "landscape";
+                    const e = this.getBlockWidth();
+                    const i = e / 2;
+                    const s = this.getBlockHeight() / 2;
+                    const n = this.setting.width / this.setting.height;
+                    let h = this.setting.width;
+                    let r = this.setting.height;
+                    let o = i - h;
+
+                    const container = document.querySelector('.reader-container');
+                    const isFullscreen = container && (container.classList.contains('is-fullscreen') || container.classList.contains('pseudo-fullscreen'));
+                    const mobileOrTablet = isMobileOrTablet();
+                    const isPortraitScreen = window.innerHeight > window.innerWidth;
+
+                    // Maximize single page on mobile/tablets, portrait screens, or narrow containers
+                    if (mobileOrTablet || (isFullscreen && window.innerWidth < 1200) || isPortraitScreen || e < s * 1.8 * n) {
+                        if (this.app.getSettings().usePortrait) {
+                            t = "portrait";
+                        }
+                    }
+
+                    if ("stretch" === this.setting.size) {
+                        h = ("portrait" === t) ? this.getBlockWidth() : (this.getBlockWidth() / 2);
+                        if (h > this.setting.maxWidth) h = this.setting.maxWidth;
+                        r = h / n;
+                        if (r > this.getBlockHeight()) {
+                            r = this.getBlockHeight();
+                            h = r * n;
+                        }
+                        o = ("portrait" === t) ? (i - h / 2 - h) : (i - h);
+                    } else {
+                        if (e < 2 * h && this.app.getSettings().usePortrait) {
+                            t = "portrait";
+                            o = i - h / 2 - h;
+                        }
+                    }
+
+                    this.boundsRect = {
+                        left: o,
+                        top: s - r / 2,
+                        width: 2 * h,
+                        height: r,
+                        pageWidth: h
+                    };
+                    return t;
+                };
+                pageFlip.update();
+            }
 
             function preload(current) {
                 for (let i = current - 4; i <= current + 4; i++) {
@@ -170,78 +261,192 @@ import midiaData from '../../../data/midia.json';
                 }
             }
 
-            // Initial render of first few pages
-            preload(1);
-
             // Events
             btnPrev.addEventListener('click', () => pageFlip.flipPrev());
             btnNext.addEventListener('click', () => pageFlip.flipNext());
 
             pageFlip.on('changeState', (e) => {
                 if (e.data === 'user_fold') {
-                    const currentPage = pageFlip.getCurrentPageIndex() + 1;
+                    const currentPage = pageFlip.getCurrentPageIndex();
                     preload(currentPage);
                 }
             });
 
             pageFlip.on('flip', (e) => {
-                const currentPage = e.data + 1;
+                const currentPage = e.data;
                 updateUI(currentPage);
                 preload(currentPage);
             });
 
             pageSlider.addEventListener('input', (e) => {
                 const pageNum = parseInt(e.target.value);
-                pageFlip.turnToPage(pageNum - 1);
+                // Show tooltip while dragging - don't navigate yet
+                sliderTooltip.textContent = pageNum;
+                sliderTooltip.classList.remove('hidden');
                 updateSliderFill(pageNum);
+                positionTooltip();
             });
 
+            pageSlider.addEventListener('change', (e) => {
+                const pageNum = parseInt(e.target.value);
+                pageFlip.turnToPage(pageNum);
+                sliderTooltip.classList.add('hidden');
+            });
+
+            // Hide tooltip when pointer leaves
+            pageSlider.addEventListener('pointerup', () => {
+                setTimeout(() => sliderTooltip.classList.add('hidden'), 300);
+            });
+
+            // Page input: jump to page on Enter or blur
+            pageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    pageInput.blur();
+                }
+            });
+
+            pageInput.addEventListener('blur', () => {
+                let val = parseInt(pageInput.value);
+                if (isNaN(val) || val < 0) val = 0;
+                if (val > maxPage) val = maxPage;
+                pageInput.value = val;
+                pageFlip.turnToPage(val);
+            });
+
+            // Select all text on focus for easy editing
+            pageInput.addEventListener('focus', () => {
+                pageInput.select();
+            });
+
+            function positionTooltip() {
+                const sliderRect = pageSlider.getBoundingClientRect();
+                const val = parseInt(pageSlider.value);
+                const min = parseInt(pageSlider.min);
+                const max = parseInt(pageSlider.max);
+                const range = max - min;
+                const percent = range > 0 ? (val - min) / range : 0;
+                // Account for thumb width (24px)
+                const thumbOffset = 12;
+                const trackWidth = sliderRect.width - 24;
+                const left = thumbOffset + percent * trackWidth;
+                sliderTooltip.style.left = left + 'px';
+            }
+
             btnFullscreen.addEventListener('click', toggleFullscreen);
-            // Also enable the secondary button if it exists
+            // Also enable header and floating exit buttons
             const btnFullscreenHeader = document.getElementById('btn-fullscreen-header');
             if (btnFullscreenHeader) btnFullscreenHeader.addEventListener('click', toggleFullscreen);
+            const btnFloatingExitFs = document.getElementById('btn-floating-exit-fs');
+            if (btnFloatingExitFs) btnFloatingExitFs.addEventListener('click', toggleFullscreen);
 
             function toggleFullscreen() {
                 const container = document.querySelector('.reader-container');
+                const isInPseudoFS = container.classList.contains('pseudo-fullscreen');
+                const isInNativeFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
                 
-                if (!document.fullscreenElement && !container.classList.contains('pseudo-fullscreen')) {
-                    if (document.documentElement.requestFullscreen) {
-                        document.documentElement.requestFullscreen();
+                if (!isInNativeFS && !isInPseudoFS) {
+                    // Try native fullscreen first (desktop + Android Chrome)
+                    const el = document.documentElement;
+                    const requestFS = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+                    
+                    if (requestFS) {
+                        requestFS.call(el).then(() => {
+                            updateFullscreenBtnUI(true);
+                            setTimeout(() => { if (pageFlip) pageFlip.update(); }, 150);
+                        }).catch(() => {
+                            activatePseudoFullscreen(container);
+                        });
                     } else {
-                        // iOS/iPhone Fallback
-                        container.classList.add('pseudo-fullscreen');
-                        document.body.style.overflow = 'hidden';
-                        if(pageFlip) pageFlip.update();
+                        // iOS iPhone or browsers without native API
+                        activatePseudoFullscreen(container);
                     }
                 } else {
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen();
-                    } else if (container.classList.contains('pseudo-fullscreen')) {
-                        // Exit iOS Fallback
-                        container.classList.remove('pseudo-fullscreen');
-                        document.body.style.overflow = '';
-                        if(pageFlip) pageFlip.update();
+                    if (isInNativeFS) {
+                        const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+                        if (exitFS) exitFS.call(document);
+                    }
+                    if (isInPseudoFS) {
+                        deactivatePseudoFullscreen(container);
+                    }
+                    updateFullscreenBtnUI(false);
+                }
+            }
+
+            function activatePseudoFullscreen(container) {
+                container.classList.add('pseudo-fullscreen');
+                container.classList.add('is-fullscreen');
+                document.body.style.overflow = 'hidden';
+                window.scrollTo(0, 1);
+                updateFullscreenBtnUI(true);
+                try { navigator.wakeLock?.request?.('screen').catch(() => {}); } catch(e) {}
+                setTimeout(() => { if(pageFlip) pageFlip.update(); }, 150);
+            }
+
+            function deactivatePseudoFullscreen(container) {
+                container.classList.remove('pseudo-fullscreen');
+                container.classList.remove('is-fullscreen');
+                document.body.style.overflow = '';
+                updateFullscreenBtnUI(false);
+                setTimeout(() => { if(pageFlip) pageFlip.update(); }, 150);
+            }
+
+            function handleFSChange() {
+                const container = document.querySelector('.reader-container');
+                const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+                if (isFS) {
+                    container.classList.add('is-fullscreen');
+                    updateFullscreenBtnUI(true);
+                } else {
+                    if (!container.classList.contains('pseudo-fullscreen')) {
+                        container.classList.remove('is-fullscreen');
+                        updateFullscreenBtnUI(false);
+                    }
+                }
+                
+                setTimeout(() => {
+                    if(pageFlip) pageFlip.update();
+                }, 150);
+            }
+
+            function updateFullscreenBtnUI(isFullscreen) {
+                const title = isFullscreen ? 'Sair do Ecrã Inteiro' : 'Ecrã Inteiro';
+                
+                if (btnFullscreen) {
+                    btnFullscreen.title = title;
+                    btnFullscreen.setAttribute('aria-label', title);
+                }
+                const btnHeader = document.getElementById('btn-fullscreen-header');
+                if (btnHeader) {
+                    const btn = btnHeader.querySelector('button');
+                    if (btn) {
+                        btn.title = title;
+                        btn.setAttribute('aria-label', title);
                     }
                 }
             }
 
-            document.addEventListener('fullscreenchange', () => {
-                const container = document.querySelector('.reader-container');
-                if (document.fullscreenElement) {
-                    container.classList.add('is-fullscreen');
-                } else {
-                    container.classList.remove('is-fullscreen');
-                }
-                
-                // Allow page flip to recalculate sizes immediately
-                setTimeout(() => {
-                    if(pageFlip) pageFlip.update();
-                }, 100);
+            document.addEventListener('fullscreenchange', handleFSChange);
+            document.addEventListener('webkitfullscreenchange', handleFSChange);
+
+            window.addEventListener('resize', () => {
+                if (pageFlip) pageFlip.update();
             });
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => { if (pageFlip) pageFlip.update(); }, 200);
+            });
+
+            // Turn to initial page if specified in URL
+            if (initialPage > 0) {
+                pageFlip.turnToPage(initialPage);
+            }
+
+            // Initial render
+            preload(initialPage);
+            updateUI(initialPage);
 
             loadingOverlay.style.opacity = '0';
             setTimeout(() => loadingOverlay.style.display = 'none', 500);
-            updateUI(1);
 
         } catch (error) {
             console.error('Error loading reader:', error);
@@ -251,13 +456,15 @@ import midiaData from '../../../data/midia.json';
 
     const renderedPages = new Set();
     async function renderPage(num) {
-        if (num < 1 || num > pdfDoc.numPages || renderedPages.has(num)) return;
+        if (!pdfDoc) return;
+        const maxPage = pdfDoc.numPages - 1;
+        if (num < 0 || num > maxPage || renderedPages.has(num)) return;
         renderedPages.add(num);
 
         const canvas = document.getElementById(`canvas-page-${num}`);
         if (!canvas) return;
 
-        const page = await pdfDoc.getPage(num);
+        const page = await pdfDoc.getPage(num + 1);
         const viewport = page.getViewport({ scale: 2 }); // Better quality
         const context = canvas.getContext('2d');
         canvas.height = viewport.height;
@@ -310,12 +517,12 @@ import midiaData from '../../../data/midia.json';
                             const dest = await pdfDoc.getDestination(anno.dest);
                             if (dest) {
                                 const pageIndex = await pdfDoc.getPageIndex(dest[0]);
-                                targetPageNum = pageIndex + 1;
+                                targetPageNum = pageIndex;
                             }
                         } else if (Array.isArray(anno.dest)) {
                             // Explicit destination array: [pageRef, ...]
                             const pageIndex = await pdfDoc.getPageIndex(anno.dest[0]);
-                            targetPageNum = pageIndex + 1;
+                            targetPageNum = pageIndex;
                         }
                     } catch (e) {
                         console.warn('Could not resolve internal link destination:', e);
@@ -325,7 +532,7 @@ import midiaData from '../../../data/midia.json';
                         linkEl.addEventListener('click', (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            pageFlip.turnToPage(targetPageNum - 1);
+                            pageFlip.turnToPage(targetPageNum);
                         });
                     }
                 } else if (anno.url) {
@@ -359,10 +566,10 @@ import midiaData from '../../../data/midia.json';
 
     function updateSliderFill(current) {
         if (!pdfDoc) return;
-        const total = pdfDoc.numPages;
-        if (total <= 1) return;
+        const maxPage = pdfDoc.numPages - 1;
+        if (maxPage <= 0) return;
         
-        const percent = ((current - 1) / (total - 1)) * 100;
+        const percent = (current / maxPage) * 100;
         
         // Precise calculation: thumb moves from 12px to (100% - 12px)
         // Its center aligns with the gradient stop.
@@ -374,27 +581,39 @@ import midiaData from '../../../data/midia.json';
 
     function updateUI(current) {
         if (!pdfDoc) return;
-        const total = pdfDoc.numPages;
+        const totalPages = pdfDoc.numPages;
+        const maxPage = totalPages - 1;
         const orientation = pageFlip.getOrientation();
         
         let displayPages = "";
         let visiblePages = [current];
 
-        if (current === 1) {
-            displayPages = "1";
-        } else if (current === total && total % 2 === 0) {
-            displayPages = total;
+        if (current === 0) {
+            displayPages = "0";
+        } else if (current === maxPage && totalPages % 2 === 0) {
+            displayPages = `${maxPage}`;
         } else {
             if (orientation === 'landscape') {
-                const next = current + 1;
-                displayPages = next <= total ? `${current}-${next}` : `${current}`;
-                if (next <= total) visiblePages.push(next);
+                const left = (current % 2 === 1) ? current : (current - 1);
+                const right = left + 1;
+                if (right <= maxPage) {
+                    displayPages = `${left}-${right}`;
+                    visiblePages = [left, right];
+                } else {
+                    displayPages = `${left}`;
+                    visiblePages = [left];
+                }
             } else {
                 displayPages = `${current}`;
             }
         }
         
-        pageCounter.textContent = `${displayPages} / ${total}`;
+        pageCounter.textContent = `${displayPages} / ${maxPage}`;
+        
+        // Update page input to current page
+        if (document.activeElement !== pageInput) {
+            pageInput.value = current;
+        }
         
         const sliderVal = parseInt(pageSlider.value);
         if (!visiblePages.includes(sliderVal)) {
@@ -409,7 +628,7 @@ import midiaData from '../../../data/midia.json';
     const playerContainer = document.getElementById('playerContainer');
     const albumTrackList = document.getElementById('albumTrackList');
 
-    function playMedia(filename, type, cover) {
+    function playMedia(filename, type, cover, startTime = 0) {
         const src = filename.startsWith('http') || filename.startsWith('/') ? filename : `/livro_media/${filename}`;
         let html = '';
         if (type === 'video') {
@@ -433,10 +652,64 @@ import midiaData from '../../../data/midia.json';
         }
         playerContainer.innerHTML = html;
         const player = document.getElementById('activePlayer');
-        if(player) {
+        if (player) {
             player.addEventListener('play', () => { window.isMediaPlaying = true; });
             player.addEventListener('pause', () => { window.isMediaPlaying = false; });
             player.addEventListener('ended', handleMediaEnded);
+
+            function executePlay() {
+                const playPromise = player.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(err => {
+                        console.warn('Playback waiting for interaction:', err);
+                        // If unmuted autoplay blocked, play on very first user interaction
+                        const onUserInteract = () => {
+                            player.play().catch(() => {});
+                            window.removeEventListener('click', onUserInteract);
+                            window.removeEventListener('touchstart', onUserInteract);
+                            window.removeEventListener('keydown', onUserInteract);
+                        };
+                        window.addEventListener('click', onUserInteract, { once: true });
+                        window.addEventListener('touchstart', onUserInteract, { once: true });
+                        window.addEventListener('keydown', onUserInteract, { once: true });
+                    });
+                }
+            }
+
+            if (startTime > 0) {
+                let hasSeeked = false;
+                const applyTimeAndPlay = () => {
+                    if (!hasSeeked) {
+                        try {
+                            player.currentTime = startTime;
+                            hasSeeked = true;
+                        } catch(e) {}
+                    }
+                    executePlay();
+                };
+
+                if (player.readyState >= 1) {
+                    applyTimeAndPlay();
+                } else {
+                    player.addEventListener('loadedmetadata', applyTimeAndPlay, { once: true });
+                    player.addEventListener('canplay', applyTimeAndPlay, { once: true });
+                }
+                player.addEventListener('seeked', executePlay, { once: true });
+
+                setTimeout(() => {
+                    if (!hasSeeked) {
+                        try { player.currentTime = startTime; } catch(e) {}
+                    }
+                    executePlay();
+                }, 300);
+            } else {
+                if (player.readyState >= 2) {
+                    executePlay();
+                } else {
+                    player.addEventListener('canplay', executePlay, { once: true });
+                }
+                setTimeout(executePlay, 100);
+            }
         }
     }
 
@@ -450,14 +723,14 @@ import midiaData from '../../../data/midia.json';
         }
     }
 
-    function playAlbumTrack(track, index) {
+    function playAlbumTrack(track, index, startTime = 0) {
         const tracks = albumTrackList.querySelectorAll('.track-item');
         tracks.forEach(t => t.classList.remove('active'));
         if(tracks[index]) tracks[index].classList.add('active');
-        playMedia(track.filename, track.type, track.cover);
+        playMedia(track.filename, track.type, track.cover, startTime);
     }
 
-    function openItem(id) {
+    function openItem(id, trackIndex = 0, startTime = 0, autoMinimize = false) {
         if(!window.MIDIA_DATA) return;
         const item = window.MIDIA_DATA.find(m => m.id == id);
         if(!item) return;
@@ -473,7 +746,7 @@ import midiaData from '../../../data/midia.json';
             currentAlbumTracks = item.tracks;
             albumTrackList.classList.remove('hidden');
             albumTrackList.innerHTML = item.tracks.map((track, idx) => `
-                <div class="track-item" data-idx="${idx}" style="cursor:pointer;padding:8px 12px;margin-bottom:4px;background:rgba(255,255,255,0.05);border-radius:4px;">
+                <div class="track-item ${idx === trackIndex ? 'active' : ''}" data-idx="${idx}" style="cursor:pointer;padding:8px 12px;margin-bottom:4px;background:rgba(255,255,255,0.05);border-radius:4px;">
                     <span style="font-size:0.9rem;margin-right:8px;">${track.type === 'video' ? '📺' : track.type === 'website' ? '🌐' : '🎵'}</span>
                     <span style="font-size:0.85rem;">${track.title}</span>
                 </div>
@@ -487,13 +760,28 @@ import midiaData from '../../../data/midia.json';
                 });
             });
 
+            const initialIdx = (trackIndex >= 0 && trackIndex < currentAlbumTracks.length) ? trackIndex : 0;
             if (currentAlbumTracks.length > 0) {
-                playAlbumTrack(currentAlbumTracks[0], 0);
+                playAlbumTrack(currentAlbumTracks[initialIdx], initialIdx, startTime);
             }
         } else {
-            playMedia(item.filename, item.type, item.cover);
+            playMedia(item.filename, item.type, item.cover, startTime);
         }
         
+        if (autoMinimize) {
+            playerModal.classList.add('minimized');
+            playerModal.style.removeProperty('left');
+            playerModal.style.removeProperty('top');
+            playerModal.style.bottom = '80px';
+            playerModal.style.right = '40px';
+        } else {
+            playerModal.classList.remove('minimized');
+            playerModal.style.removeProperty('left');
+            playerModal.style.removeProperty('top');
+            playerModal.style.removeProperty('bottom');
+            playerModal.style.removeProperty('right');
+        }
+
         playerModal.classList.remove('hidden');
     }
 
@@ -599,6 +887,25 @@ import midiaData from '../../../data/midia.json';
             closePlayer();
         }
     });
+
+    // Start immediate media playback without waiting for PDF
+    (function checkInitialMedia() {
+        const params = new URLSearchParams(window.location.search);
+        const mParam = params.get('m');
+        if (mParam) {
+            const mId = parseInt(mParam);
+            if (!isNaN(mId)) {
+                const trParam = params.get('tr');
+                const tParam = params.get('t');
+                const trIdx = trParam ? parseInt(trParam) : 0;
+                const sTime = tParam ? parseFloat(tParam) : 0;
+                // Open and play in mini-player immediately!
+                setTimeout(() => {
+                    openItem(mId, trIdx, sTime, true);
+                }, 50);
+            }
+        }
+    })();
 
     // Start
     window.addEventListener('DOMContentLoaded', initReader);
@@ -794,8 +1101,73 @@ import midiaData from '../../../data/midia.json';
         user-select: none;
     }
 
-    input[type=range] {
+    .page-input {
+        width: 50px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 6px;
+        color: #fff;
+        font-size: 0.85rem;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        text-align: center;
+        padding: 4px 6px;
+        outline: none;
+        transition: border-color 0.2s, background 0.2s;
+        -moz-appearance: textfield;
+        font-family: inherit;
+    }
+
+    .page-input::-webkit-outer-spin-button,
+    .page-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .page-input:focus {
+        border-color: var(--reader-accent);
+        background: rgba(255,255,255,0.12);
+    }
+
+    .slider-wrapper {
         flex: 1;
+        position: relative;
+    }
+
+    .slider-tooltip {
+        position: absolute;
+        top: -36px;
+        transform: translateX(-50%);
+        background: var(--reader-accent);
+        color: #000;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 6px;
+        pointer-events: none;
+        white-space: nowrap;
+        z-index: 100;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        transition: opacity 0.15s;
+    }
+
+    .slider-tooltip::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: var(--reader-accent);
+    }
+
+    .slider-tooltip.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    input[type=range] {
+        width: 100%;
         height: 10px;
         appearance: none;
         background: rgba(255,255,255,0.1); /* Fallback */
@@ -865,6 +1237,30 @@ import midiaData from '../../../data/midia.json';
         fill: currentColor;
     }
 
+    .footer-btn .icon-enter-fs {
+        display: block;
+    }
+
+    .footer-btn .icon-exit-fs {
+        display: none;
+    }
+
+    :global(.reader-container.is-fullscreen) .footer-btn .icon-enter-fs,
+    :global(.reader-container.pseudo-fullscreen) .footer-btn .icon-enter-fs {
+        display: none !important;
+    }
+
+    :global(.reader-container.is-fullscreen) .footer-btn .icon-exit-fs,
+    :global(.reader-container.pseudo-fullscreen) .footer-btn .icon-exit-fs {
+        display: block !important;
+    }
+
+    :global(.footer-btn svg) {
+        width: 22px !important;
+        height: 22px !important;
+        fill: currentColor !important;
+    }
+
     /* Loading */
     .loading-overlay {
         position: fixed;
@@ -892,64 +1288,170 @@ import midiaData from '../../../data/midia.json';
         to { transform: rotate(360deg); }
     }
 
-    @media (max-width: 768px) {
+    /* Responsive breakpoints for shell and book bounds */
+    @media (max-width: 1024px) {
         .reader-shell {
-            padding: 20px 40px;
+            padding: 10px 10px 75px 10px;
+        }
+        .book-bounds {
+            max-width: 95vw;
+            max-height: calc(100vh - 140px);
+            max-height: calc(100dvh - 140px);
         }
         .book {
             touch-action: auto !important;
         }
         .nav-btn {
-            width: 40px;
-            height: 60px;
+            width: 44px;
+            height: 64px;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
         }
-        .nav-btn.prev { left: 10px; }
-        .nav-btn.next { right: 10px; }
+        .nav-btn.prev { left: 8px; }
+        .nav-btn.next { right: 8px; }
+        .nav-btn svg { width: 28px; height: 28px; }
     }
 
-    /* Fullscreen specific */
-    .reader-container.is-fullscreen .reader-header {
-        display: none;
-    }
-    
-    .reader-container.is-fullscreen .reader-shell {
-        padding: 4vh 4vw 70px 4vw;
+    @media (max-width: 600px) {
+        .reader-shell {
+            padding: 8px 6px 70px 6px;
+        }
+        .book-bounds {
+            max-width: 98vw;
+            max-height: calc(100vh - 130px);
+            max-height: calc(100dvh - 130px);
+        }
+        .nav-btn {
+            width: 36px;
+            height: 52px;
+            background: rgba(0,0,0,0.4);
+        }
+        .nav-btn.prev { left: 4px; }
+        .nav-btn.next { right: 4px; }
+        .nav-btn svg { width: 24px; height: 24px; }
+        .reader-footer {
+            height: 60px;
+            padding: 0 12px;
+        }
+        .footer-controls {
+            gap: 12px;
+        }
+        .page-slider-container {
+            gap: 8px;
+        }
+        .page-input {
+            width: 44px;
+            padding: 3px 4px;
+            font-size: 0.8rem;
+        }
     }
 
-    .reader-container.is-fullscreen .book-bounds {
-        max-width: 83vw;
-        max-height: calc(100vh - 160px);
-    }
-    
-    .reader-container.is-fullscreen .reader-footer {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-        border: none;
-        backdrop-filter: none;
-        opacity: 0.3;
-        transition: opacity 0.3s;
-    }
-
-    .reader-container.is-fullscreen .reader-footer:hover,
-    .reader-container.pseudo-fullscreen .reader-footer:hover {
-        opacity: 1;
-    }
-
-    /* Pseudo-fullscreen for iOS */
+    /* Fullscreen (Native & Pseudo-fullscreen) */
+    .reader-container.is-fullscreen,
     .reader-container.pseudo-fullscreen {
         position: fixed;
-        top: 0;
-        left: 0;
+        inset: 0;
         width: 100vw;
         height: 100vh;
+        height: 100dvh;
         z-index: 9999;
     }
 
+    .reader-container.is-fullscreen .reader-header,
     .reader-container.pseudo-fullscreen .reader-header {
         display: none;
+    }
+
+    .floating-exit-fs {
+        display: none;
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: #fff;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 2500;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+
+    .floating-exit-fs:hover {
+        background: rgba(212, 175, 55, 0.85);
+        color: #000;
+        transform: scale(1.08);
+    }
+
+    .floating-exit-fs svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+    }
+
+    .reader-container.is-fullscreen .floating-exit-fs,
+    .reader-container.pseudo-fullscreen .floating-exit-fs {
+        display: flex;
+    }
+
+    .reader-container.is-fullscreen .reader-shell,
+    .reader-container.pseudo-fullscreen .reader-shell {
+        flex: 1;
+        width: 100%;
+        min-height: 0;
+        padding: 10px 4vw;
+        box-sizing: border-box;
+    }
+
+    .reader-container.is-fullscreen .book-bounds,
+    .reader-container.pseudo-fullscreen .book-bounds {
+        width: 100%;
+        height: 100%;
+        max-width: 90vw;
+        max-height: calc(100vh - 90px);
+        max-height: calc(100dvh - 90px);
+    }
+
+    .reader-container.is-fullscreen .reader-footer,
+    .reader-container.pseudo-fullscreen .reader-footer {
+        position: relative;
+        height: 65px;
+        background: rgba(10, 10, 10, 0.92);
+        backdrop-filter: blur(15px);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 100;
+        opacity: 1;
+    }
+
+    .reader-container.is-fullscreen #btn-fullscreen,
+    .reader-container.pseudo-fullscreen #btn-fullscreen {
+        color: var(--reader-accent);
+    }
+
+    /* Mobile & Tablet Fullscreen Maximization */
+    @media (max-width: 1024px) {
+        .reader-container.is-fullscreen .reader-shell,
+        .reader-container.pseudo-fullscreen .reader-shell {
+            padding: 4px;
+        }
+
+        .reader-container.is-fullscreen .book-bounds,
+        .reader-container.pseudo-fullscreen .book-bounds {
+            max-width: 98vw;
+            max-height: calc(100vh - 75px);
+            max-height: calc(100dvh - 75px);
+        }
+
+        .reader-container.is-fullscreen .reader-footer,
+        .reader-container.pseudo-fullscreen .reader-footer {
+            height: 60px;
+            padding: 0 12px;
+        }
     }
 
     .header-fullscreen-btn {

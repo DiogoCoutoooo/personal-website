@@ -3,6 +3,7 @@ import Layout from '../../../layouts/Layout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import midiaData from '../../../data/midia.json';
+import mediaPageMap from '../../../data/mediaPageMap.json';
 
 // Sort media by ID
 const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
@@ -109,6 +110,10 @@ const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
 					<!-- Track list for albums -->
 				</div>
 				<div class="modal-actions">
+					<button id="viewInBook" class="btn-small btn-book hidden" title="Ver a respetiva página deste conteúdo no livro">
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+						<span>Ver no Livro (pág. <span id="bookPageNum"></span>)</span>
+					</button>
 					<button id="copyLink" class="btn-small">Copiar Link</button>
 				</div>
 			</div>
@@ -583,7 +588,9 @@ const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
 
 	.modal-actions {
 		display: flex;
+		align-items: center;
 		justify-content: flex-end;
+		gap: 10px;
 		margin-top: 12px;
 	}
 
@@ -591,16 +598,34 @@ const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
 		background: rgba(255,255,255,0.05);
 		color: var(--muted);
 		border: 1px solid rgba(255,255,255,0.1);
-		padding: 4px 10px;
-		border-radius: 4px;
-		font-size: 0.75rem;
+		padding: 6px 12px;
+		border-radius: 6px;
+		font-size: 0.8rem;
 		cursor: pointer;
 		transition: all 0.2s;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-family: inherit;
 	}
 
 	.btn-small:hover {
 		background: rgba(255,255,255,0.1);
 		color: #fff;
+	}
+
+	.btn-book {
+		background: rgba(212, 175, 55, 0.15);
+		color: var(--gold);
+		border-color: rgba(212, 175, 55, 0.4);
+		font-weight: 500;
+	}
+
+	.btn-book:hover {
+		background: rgba(212, 175, 55, 0.3);
+		color: #fff;
+		border-color: var(--gold);
+		transform: translateY(-1px);
 	}
 
 	@media (max-width: 640px) {
@@ -609,6 +634,8 @@ const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
 </style>
 
 <script>
+	import mediaPageMap from '../../../data/mediaPageMap.json';
+
 	const searchInput = document.getElementById('mediaSearch') as HTMLInputElement;
 	const mediaCards = document.querySelectorAll('.media-card');
 	// Select only the filter buttons in the filters group
@@ -622,6 +649,8 @@ const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
 	const modalNumber = document.getElementById('modalNumber');
 	const albumTrackList = document.getElementById('albumTrackList');
 	const copyLinkBtn = document.getElementById('copyLink');
+	const viewInBookBtn = document.getElementById('viewInBook');
+	const bookPageNum = document.getElementById('bookPageNum');
 	const mediaGrid = document.getElementById('mediaGrid');
 	const viewBtns = document.querySelectorAll('.view-btn');
 
@@ -826,6 +855,15 @@ const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
 		playerModal?.classList.remove('hidden');
 		document.body.style.overflow = 'hidden';
 
+		// Update "Ver no Livro" button
+		const page = (mediaPageMap as Record<string, number>)[String(id)];
+		if (page && viewInBookBtn && bookPageNum) {
+			bookPageNum.textContent = String(page);
+			viewInBookBtn.classList.remove('hidden');
+		} else if (viewInBookBtn) {
+			viewInBookBtn.classList.add('hidden');
+		}
+
 		// Deep linking
 		const url = new URL(window.location.href);
 		url.searchParams.set('m', id);
@@ -921,6 +959,29 @@ const sortedMidia = [...midiaData].sort((a, b) => a.id - b.id);
 				card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			}
 		}
+	});
+
+	// View in Book
+	viewInBookBtn?.addEventListener('click', () => {
+		if (!currentMediaItem) return;
+		const page = (mediaPageMap as Record<string, number>)[String(currentMediaItem.id)];
+		if (!page) return;
+
+		let currentTime = 0;
+		const player = document.getElementById('activePlayer') as HTMLMediaElement;
+		if (player && !isNaN(player.currentTime) && player.currentTime > 0) {
+			currentTime = Math.floor(player.currentTime);
+		}
+
+		let url = `/obras/MeC_CdH/ler?p=${page}&m=${currentMediaItem.id}`;
+		if (currentTime > 0) {
+			url += `&t=${currentTime}`;
+		}
+		if (currentMediaItem.type === 'album' && currentTrackIndex >= 0) {
+			url += `&tr=${currentTrackIndex}`;
+		}
+
+		window.location.href = url;
 	});
 
 	// Copy Link
